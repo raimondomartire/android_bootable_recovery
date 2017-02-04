@@ -324,6 +324,7 @@ ALL_TOOLS := \
     free \
     getenforce \
     getprop \
+	grep \
     groups \
     head \
     hostname \
@@ -346,6 +347,7 @@ ALL_TOOLS := \
     mktemp \
     modinfo \
     more \
+	mount \
     mountpoint \
     mv \
     netstat \
