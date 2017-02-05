@@ -613,7 +613,7 @@ LOCAL_SRC_FILES := \
     asn1_decoder.cpp \
     verifier.cpp \
     ui.cpp
-LOCAL_STATIC_LIBRARIES := libcrypto_static
+LOCAL_STATIC_LIBRARIES := libcrypto
 include $(BUILD_STATIC_LIBRARY)
 
 commands_recovery_local_path := $(LOCAL_PATH)
