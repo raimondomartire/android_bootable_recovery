@@ -796,7 +796,13 @@ void DataManager::SetDefaultValues()
 		TWFunc::Set_Brightness(maxBrightness);
 #endif
 	}
-
+#ifdef TW_BACKUP_DATA_HWINIT
+	printf("TW_BACKUP_DATA_HWINIT := true\n");
+	mConstValues.insert(make_pair(TW_BACKUP_DATA_HWINIT, "1"));
+#else
+	mConstValues.insert(make_pair(TW_BACKUP_DATA_HWINIT, "0"));
+#endif
+ 
 #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
 	mConst.SetValue("tw_include_encrypted_backup", "1");
 #else

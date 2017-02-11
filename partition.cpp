@@ -218,6 +218,7 @@ TWPartition::TWPartition() {
 	Can_Encrypt_Backup = false;
 	Use_Userdata_Encryption = false;
 	Has_Data_Media = false;
+	BACKUP_DATA_HWINIT = false;
 	Has_Android_Secure = false;
 	Is_Storage = false;
 	Is_Settings_Storage = false;
@@ -910,6 +911,18 @@ void TWPartition::Setup_Data_Media() {
 		}
 		DataManager::SetValue("tw_has_internal", 1);
 		DataManager::SetValue("tw_has_data_media", 1);
+	int backup_datamedia;
+ 
+ 	// Check if we need to exclude data/media
+ 	DataManager::GetValue(TW_BACKUP_DATA_HWINIT, backup_datamedia);
+ 	if (backup_datamedia != 0) {
+ 		BACKUP_DATA_HWINIT = true;
+ 		LOGINFO("Will backup data/hw_init on emulated storage.\n");
+	} else {
+		BACKUP_DATA_HWINIT = false;
+		backup_exclusions.add_absolute_dir("/data/hw_init");
+ 		LOGINFO("Will exclude data/media on emulated storage.\n");
+ 	}
 		backup_exclusions.add_absolute_dir("/data/data/com.google.android.music/files");
 		ExcludeAll(Mount_Point + "/misc/vold");
 		ExcludeAll(Mount_Point + "/.layout_version");
@@ -1382,7 +1395,7 @@ bool TWPartition::Wipe(string New_File_System) {
 	else
 		unlink("/.layout_version");
 
-	if (Has_Data_Media && Current_File_System == New_File_System) {
+	if (Has_Data_Media && BACKUP_DATA_HWINIT && Current_File_System == New_File_System) {
 		wiped = Wipe_Data_Without_Wiping_Media();
 		recreate_media = false;
 	} else {

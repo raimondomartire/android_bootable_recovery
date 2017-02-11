@@ -352,6 +352,10 @@ else
     LOCAL_CFLAGS += -DTW_DEFAULT_LANGUAGE=en
 endif
 
+ifeq ($(TW_BACKUP_DATA_HWINIT), true)
+LOCAL_CFLAGS += -DTW_BACKUP_DATA_HWINIT
+endif
+
 LOCAL_ADDITIONAL_DEPENDENCIES += \
     dump_image \
     erase_image \
