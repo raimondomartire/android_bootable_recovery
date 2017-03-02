@@ -1513,7 +1513,7 @@ void TWPartitionManager::Post_Decrypt(const string& Block_Device) {
 
 int TWPartitionManager::Decrypt_Device(string Password) {
 #ifdef TW_INCLUDE_CRYPTO
-	char crypto_state[PROPERTY_VALUE_MAX], crypto_blkdev[PROPERTY_VALUE_MAX], cPassword[255];
+	char crypto_state[PROPERTY_VALUE_MAX], crypto_blkdev[PROPERTY_VALUE_MAX];
 	std::vector<TWPartition*>::iterator iter;
 
 	// Mount any partitions that need to be mounted for decrypt
@@ -1549,8 +1549,25 @@ int TWPartitionManager::Decrypt_Device(string Password) {
 		return -1;
 	}
 
-	strcpy(cPassword, Password.c_str());
-	int pwret = cryptfs_check_passwd(cPassword);
+	int pwret = -1;
+	pid_t pid = fork();
+	if (pid < 0) {
+		LOGERR("fork failed\n");
+		return -1;
+	} else if (pid == 0) {
+		// Child process
+		char cPassword[255];
+		strcpy(cPassword, Password.c_str());
+		int ret = cryptfs_check_passwd(cPassword);
+		exit(ret);
+	} else {
+		// Parent
+		int status;
+		if (TWFunc::Wait_For_Child_Timeout(pid, &status, "Decrypt", 30))
+			pwret = -1;
+		else
+			pwret = WEXITSTATUS(status) ? -1 : 0;
+	}
 
 	// Unmount any partitions that were needed for decrypt
 	for (iter = Partitions.begin(); iter != Partitions.end(); iter++) {
@@ -2081,8 +2098,6 @@ bool TWPartitionManager::Enable_MTP(void) {
 		gui_err("mtp_already_enabled=MTP already enabled");
 		return true;
 	}
-	//Launch MTP Responder
-	LOGINFO("Starting MTP\n");
 
 	int mtppipe[2];
 
@@ -2092,8 +2107,8 @@ bool TWPartitionManager::Enable_MTP(void) {
 	}
 
 	char old_value[PROPERTY_VALUE_MAX];
-	property_get("sys.usb.config", old_value, "error");
-	if (strcmp(old_value, "error") != 0 && strcmp(old_value, "mtp,adb") != 0) {
+	property_get("sys.usb.config", old_value, "");
+	if (strcmp(old_value, "mtp,adb") != 0) {
 		char vendor[PROPERTY_VALUE_MAX];
 		char product[PROPERTY_VALUE_MAX];
 		property_set("sys.usb.config", "none");
@@ -2105,7 +2120,7 @@ bool TWPartitionManager::Enable_MTP(void) {
 		TWFunc::write_file("/sys/class/android_usb/android0/idProduct", productstr);
 		property_set("sys.usb.config", "mtp,adb");
 	}
-	/* To enable MTP debug, use the twrp command line feature to
+	/* To enable MTP debug, use the twrp command line feature:
 	 * twrp set tw_mtp_debug 1
 	 */
 	twrpMtp *mtp = new twrpMtp(DataManager::GetIntValue("tw_mtp_debug"));
@@ -2147,13 +2162,13 @@ void TWPartitionManager::Add_All_MTP_Storage(void) {
 
 bool TWPartitionManager::Disable_MTP(void) {
 	char old_value[PROPERTY_VALUE_MAX];
-	property_get("sys.usb.config", old_value, "error");
+	property_get("sys.usb.config", old_value, "");
 	if (strcmp(old_value, "adb") != 0) {
 		char vendor[PROPERTY_VALUE_MAX];
 		char product[PROPERTY_VALUE_MAX];
 		property_set("sys.usb.config", "none");
 		property_get("usb.vendor", vendor, "18D1");
-		property_get("usb.product.adb", product, "D002");
+		property_get("usb.product.adb", product, "D001");
 		string vendorstr = vendor;
 		string productstr = product;
 		TWFunc::write_file("/sys/class/android_usb/android0/idVendor", vendorstr);
